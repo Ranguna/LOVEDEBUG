@@ -29,13 +29,19 @@ local _Debug = {
 	
 	trackKeys = {},
 	keyRepeatInterval = 0.05,
-	keyRepeatDelay = 0.4
+	keyRepeatDelay = 0.4,
+	
+	liveOutput='',
+	liveDo=false
 }
 
 --Settings
 _DebugSettings = {
 	MultipleErrors = false,
 	OverlayColor = {0, 0, 0},
+	
+	LiveFile = 'main.lua',
+	LiveReset = false
 }
 
 
@@ -43,8 +49,10 @@ _DebugSettings = {
 _DebugSettings.Settings = function()
 	print("Settings:")
 
-	print("   _DebugSettings.MultipleErrors  [Boolean]  Controls if errors should appear multiple times")
-	print("   _DebugSettings.OverlayColor  [{int, int, int}]  Sets the color of the overlay")
+	print("   _DebugSettings.MultipleErrors  [Boolean]  Controls if errors should appear multiple times, default is false")
+	print("   _DebugSettings.OverlayColor  [{int, int, int}]  Sets the color of the overlay, default is {0,0,0}")
+	print("   _DebugSettings.LiveFile  [String]  Sets the file that lovedebug reloads, default is 'main.lua'")
+	print("   _DebugSettings.LiveReset  [Boolean]  Rather or not love.run() should be reloaded if the code is HotSwapped, default is false")
 end
 
 
@@ -180,7 +188,7 @@ _Debug.handleMouse = function(a, b, c)
 	if c == "wu" and _Debug.orderOffset > 0 then
 		_Debug.orderOffset = _Debug.orderOffset - 1
 	end
-	if c == "m" and _Debug.orderOffset < #_Debug.order - _Debug.lastRows + 1 then
+	if c == "m" and love.keyboard.isDown('lctrl') and _Debug.orderOffset < #_Debug.order - _Debug.lastRows + 1 then
 		 _Debug.orderOffset = #_Debug.order - _Debug.lastRows + 1
 	end
 end
@@ -188,8 +196,7 @@ end
 --Process Keypresses
 _Debug.keyConvert = function(key)
 	if string.len(key)==1 then
-		-- only ASCII for now, because proper unicode support requires
-		-- a lot of changes to the library *please forgive me*
+		-- No special characters.
 		_Debug.inputMarker = _Debug.inputMarker + 1
 		_Debug.tick = 0
 		_Debug.drawTick = false
@@ -246,6 +253,8 @@ _Debug.keyConvert = function(key)
 			_Debug.tick = 0
 			_Debug.drawTick = false
 		end
+	elseif key == 'f5' then
+		_Debug.liveDo=true
 	elseif key == "return" then --Execute Script
 		print("> " .. _Debug.input)
 		_Debug.history[#_Debug.history] = _Debug.input
@@ -397,9 +406,36 @@ _Debug.handleVirtualKey = function(a)
 		end
 end
 
-_Debug.reloadCode()
-	 --reload the code
+--Reloading the Code, update() and load()
+_Debug.hotSwapUpdate = function(dt)
+	--print('Starting HotSwap')
+	local output, ok, err, loadok, updateok
+	success, chunk = pcall(love.filesystem.load, _DebugSettings.LiveFile)
+	if not success then
+        print(tostring(chunk))
+		output = chunk .. '\n'
+    end
+    ok,err = xpcall(chunk, _Debug.handleError)
+	
+	if ok then
+		print("'".._DebugSettings.LiveFile.."' Reloaded.")
+	end
+	
+	if _DebugSettings.LiveReset then
+		loadok,err=xpcall(love.load,_Debug.handleError)
+		if loadok then
+			print("'love.run()' Reloaded.")
+		end
+	end
+	
+	updateok,err=pcall(love.update,dt)
 end
+--Reloading the code, draw(), I don't think this is needed..
+_Debug.hotSwapDraw = function()
+	local drawok,err
+	drawok,err = xpcall(love.draw,_Debug.handleError)
+end
+	
 
 --Modded version of original love.run
 _G["love"].run = function()
@@ -490,11 +526,13 @@ _G["love"].run = function()
 				end
 			end
 		end
-		if love.update and not _Debug.drawOverlay then xpcall(function() love.update(dt) end, _Debug.handleError) end -- will pass 0 if love.timer is disabled
+		
+		if love.update and not _Debug.drawOverlay then xpcall(function() love.update(dt) end, _Debug.handleError)
+		elseif love.update and _Debug.liveDo then _Debug.hotSwapUpdate(dt) end -- will pass 0 if love.timer is disabled
 		if love.window and love.graphics and love.window.isCreated() then
 			love.graphics.clear()
 			love.graphics.origin()
-			if love.draw then xpcall(love.draw, _Debug.handleError) end
+			if love.draw then if _Debug.liveDo then _Debug.hotSwapDraw() _Debug.liveDo=false else xpcall(love.draw, _Debug.handleError) end end
 			if _Debug.drawOverlay then _Debug.overlay() end
 			love.graphics.present()
 		end
