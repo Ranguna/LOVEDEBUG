@@ -32,6 +32,7 @@ local _Debug = {
 	keyRepeatDelay = 0.4,
 	
 	liveOutput='',
+	liveLastModified=0
 	liveDo=false
 }
 
@@ -528,7 +529,10 @@ _G["love"].run = function()
 		end
 		
 		if love.update and not _Debug.drawOverlay then xpcall(function() love.update(dt) end, _Debug.handleError)
-		elseif love.update and _Debug.liveDo then _Debug.hotSwapUpdate(dt) end -- will pass 0 if love.timer is disabled
+		elseif love.update and (_Debug.liveDo or (_Debug.LiveAuto and _Debug.liveLastModified < love.filesystem.getLastModified(_DebugSettings.LiveFile))) then 
+			_Debug.liveLastModified = _Debug.LiveAuto and love.filesystem.getLastModified(_DebugSettings.LiveFile) or 0
+			_Debug.hotSwapUpdate(dt) 
+		end -- will pass 0 if love.timer is disabled
 		if love.window and love.graphics and love.window.isCreated() then
 			love.graphics.clear()
 			love.graphics.origin()
