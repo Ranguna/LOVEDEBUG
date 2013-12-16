@@ -4,7 +4,7 @@ LoveDebug - A whole new way of debugging your game, original created by [kalle29
 
 Tired of having to restart your whole game when an error occurs or attaching a console, which you have to switch to, just to see your debug printings? Tired of adding extra variable in text to your graphical experience, taking space and looks misplaced? Tired of not having the possibility to execute scripts in-game without attaching a GUI or even writing one yourself? **Now all of this is unnecessary!**
 
-LoveDebug is a community-driven driven open-development project, the creator has stopped posting in a while so everyone's free to do whatever they want with this code specialy adding new functionalities.
+LoveDebug is a community-driven open-development project, the creator has stopped posting in a while so everyone's free to do whatever they want with this code specialy adding new functionalities.
 ***
 
 
