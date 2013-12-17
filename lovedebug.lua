@@ -32,7 +32,7 @@ local _Debug = {
 	keyRepeatDelay = 0.4,
 	
 	liveOutput='',
-	liveLastModified=0
+	liveLastModified=love.filesystem.getLastModified('main.lua'),
 	liveDo=false
 }
 
@@ -41,6 +41,7 @@ _DebugSettings = {
 	MultipleErrors = false,
 	OverlayColor = {0, 0, 0},
 	
+	LiveAuto = false,
 	LiveFile = 'main.lua',
 	LiveReset = false
 }
@@ -52,6 +53,7 @@ _DebugSettings.Settings = function()
 
 	print("   _DebugSettings.MultipleErrors  [Boolean]  Controls if errors should appear multiple times, default is false")
 	print("   _DebugSettings.OverlayColor  [{int, int, int}]  Sets the color of the overlay, default is {0,0,0}")
+	print("   _DebugSettings.LiveAuto  [Boolean]  Check if the code should be reloaded when it's modified, default is false")
 	print("   _DebugSettings.LiveFile  [String]  Sets the file that lovedebug reloads, default is 'main.lua'")
 	print("   _DebugSettings.LiveReset  [Boolean]  Rather or not love.run() should be reloaded if the code is HotSwapped, default is false")
 end
@@ -528,9 +530,15 @@ _G["love"].run = function()
 			end
 		end
 		
-		if love.update and not _Debug.drawOverlay then xpcall(function() love.update(dt) end, _Debug.handleError)
-		elseif love.update and (_Debug.liveDo or (_Debug.LiveAuto and _Debug.liveLastModified < love.filesystem.getLastModified(_DebugSettings.LiveFile))) then 
-			_Debug.liveLastModified = _Debug.LiveAuto and love.filesystem.getLastModified(_DebugSettings.LiveFile) or 0
+		if love.update and not _Debug.drawOverlay then
+			if _DebugSettings.LiveAuto and _Debug.liveLastModified < love.filesystem.getLastModified(_DebugSettings.LiveFile) then
+				_Debug.liveLastModified = _DebugSettings.LiveAuto and love.filesystem.getLastModified(_DebugSettings.LiveFile) or 0
+				_Debug.hotSwapUpdate(dt) 
+			else
+				xpcall(function() love.update(dt) end, _Debug.handleError)
+			end
+		elseif love.update and (_Debug.liveDo or (_DebugSettings.LiveAuto and _Debug.liveLastModified < love.filesystem.getLastModified(_DebugSettings.LiveFile))) then 
+			_Debug.liveLastModified = love.filesystem.getLastModified(_DebugSettings.LiveFile)
 			_Debug.hotSwapUpdate(dt) 
 		end -- will pass 0 if love.timer is disabled
 		if love.window and love.graphics and love.window.isCreated() then
