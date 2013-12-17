@@ -28,7 +28,7 @@ end
 * Type `_DebugSettings.Settings()` to see a list of available variables that you can change.
 * Use the arrow keys while you are coding in the console to browse a list of possible autocompletions and press tab to autocomplete the word.
 * Use Shift+Arrow keys to browse input histoy.
-* Press F5 while you are at the console to reload your code.
+* Press F5 while you are at the console to reload your code or simply set _DebugSettings.LiveAuto to true to automaticly reload your code when it's changed
 
 
 **Full Functionality list:**
@@ -43,5 +43,5 @@ end
 * Fast jumping to the bottom of the console by pressing lCtrl+Middle mouse button or by providing a code to the console.
 * Use the home and the end keys to jump to the end or to beginning of the line.
 * Browse code history by using the arrow keys while pressing the Shift key.
-* LiveCoding, you can reload your code by pressing F5 while at the console.
+* LiveCoding, you can reload your code by pressing F5 while at the console or by setting _DebugSettings.LiveAuto to true.
 * Add your own ;)
