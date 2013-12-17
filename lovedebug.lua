@@ -556,4 +556,3 @@ _G["love"].run = function()
 	end
 
 end
-
