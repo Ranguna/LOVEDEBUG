@@ -44,4 +44,5 @@ end
 * Use the home and the end keys to jump to the end or to beginning of the line.
 * Browse code history by using the arrow keys while pressing the Shift key.
 * LiveCoding, you can reload your code by pressing F5 while at the console or by setting _DebugSettings.LiveAuto to true.
+* Type clear and press enter to clear the console.
 * Add your own ;)
