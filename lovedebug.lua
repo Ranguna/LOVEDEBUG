@@ -259,29 +259,45 @@ _Debug.keyConvert = function(key)
 	elseif key == 'f5' then
 		_Debug.liveDo=true
 	elseif key == "return" then --Execute Script
-		print("> " .. _Debug.input)
-		_Debug.history[#_Debug.history] = _Debug.input
-		table.insert(_Debug.history, '')
-		_Debug.historyIndex = #_Debug.history
-
-		local f, err = loadstring(_Debug.input)
-		if f then
-			f, err = pcall(f)
-		end
-		if not f then
-			local sindex = 16 + #_Debug.input
-			if sindex > 63 then
-				sindex = 67
+		if _Debug.input == 'clear' then
+			_Debug.history[#_Debug.history] = _Debug.input
+			table.insert(_Debug.history, '')
+			_Debug.historyIndex = #_Debug.history
+			_Debug.errors = {}
+			_Debug.prints = {}
+			_Debug.order = {}
+			_Debug.orderOffset = 0
+			_Debug.longestOffset = 0
+			_Debug.lastH = nil
+			_Debug.lastCut = nil
+			_Debug.lastRows = 1
+			_Debug.input = ""
+			_Debug.inputMarker = 0
+		else
+			print("> " .. _Debug.input)
+			_Debug.history[#_Debug.history] = _Debug.input
+			table.insert(_Debug.history, '')
+			_Debug.historyIndex = #_Debug.history
+	 
+			local f, err = loadstring(_Debug.input)
+			if f then
+				f, err = pcall(f)
 			end
-			_Debug.handleError(err:sub(sindex))
+			if not f then
+				local sindex = 16 + #_Debug.input
+				if sindex > 63 then
+					sindex = 67
+				end
+				_Debug.handleError(err:sub(sindex))
+			end
+			_Debug.input = ""
+			_Debug.inputMarker = 0
+			if _Debug.orderOffset < #_Debug.order - _Debug.lastRows + 1 then
+				_Debug.orderOffset = #_Debug.order - _Debug.lastRows + 1
+			end
+			_Debug.tick = 0
+			_Debug.drawTick = false
 		end
-		_Debug.input = ""
-		_Debug.inputMarker = 0
-		if _Debug.orderOffset < #_Debug.order - _Debug.lastRows + 1 then
-			_Debug.orderOffset = #_Debug.order - _Debug.lastRows + 1
-		end
-		_Debug.tick = 0
-		_Debug.drawTick = false
 	elseif key == "home" then
 		_Debug.inputMarker = 0
 		_Debug.tick = 0
@@ -556,3 +572,4 @@ _G["love"].run = function()
 	end
 
 end
+
