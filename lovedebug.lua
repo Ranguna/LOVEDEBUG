@@ -1,5 +1,5 @@
 --local _Debug table for holding all variables
-local _Debug = {
+ _Debug = {
 	errors = {},
 	prints = {},
 	order = {},
@@ -391,38 +391,79 @@ _Debug.findLocation = function(str)
 end
 
 --Handle Keypresses
-_Debug.handleKey = function(a,b)
+_Debug.handleKey = function(a)
 	local activekey = _lovedebugpresskey or "f8"
 	if a == activekey then
 		if love.keyboard.isDown("lshift", "rshift", "lctrl", "rctrl") then --Support for both Shift and CTRL
 			_Debug.drawOverlay = not _Debug.drawOverlay --Toggle
 		end
-	elseif _Debug.drawOverlay and not b then
-		_Debug.handleVirtualKey(a)
-		if not _Debug.trackKeys[a] then
-			_Debug.trackKeys[a] = { time = _Debug.keyRepeatInterval - _Debug.keyRepeatDelay}
+	elseif _Debug.drawOverlay then
+		if love.keyboard.isDown('lctrl') then
+			if a:lower()=='v' and #love.system.getClipboardText()>0 then
+				 local clipboard=love.system.getClipboardText()
+				 local text={}
+				 for char in string.gmatch(clipboard,".") do text[#text+1]=char end
+				 _Debug.handleVirtualKey(text)
+			elseif a:lower()=='c' then
+				 love.system.setClipboardText(_Debug.input)
+				 return
+			end
+		else
+			_Debug.handleVirtualKey(a)
+			if not _Debug.trackKeys[a] then
+				_Debug.trackKeys[a] = { time = _Debug.keyRepeatInterval - _Debug.keyRepeatDelay}
+			end
 		end
 	end
 end
 
 --Handle Virtual Keypresses
 _Debug.handleVirtualKey = function(a)
+	 if type(a) == 'string' then
 		_Debug.resetProposals = true
 		local add = _Debug.keyConvert(a) or '' --Needed for backspace, do NOT optimize
 		local suffix = _Debug.input:sub(_Debug.inputMarker, (#_Debug.input >= _Debug.inputMarker) and #_Debug.input or _Debug.inputMarker + 1)
 		if _Debug.inputMarker == 0 then --Keep the input from copying itself
-			suffix = ""
+			 suffix = ""
 		end
 		_Debug.input = _Debug.input:sub(0, _Debug.inputMarker - 1) .. add .. suffix
 		if _Debug.resetProposals then
-			if _Debug.inputMarker == 0 or _Debug.input:sub(_Debug.inputMarker + 1, _Debug.inputMarker + 1):find('[0-9a-zA-Z_]') then
-				_Debug.ProposalLocation = _G
-				_Debug.Proposal_String = ''
-			else
-				_Debug.findLocation(_Debug.input:sub(1, _Debug.inputMarker))
-			end
-			_Debug.updateProposals(_Debug.ProposalLocation)
+			 if _Debug.inputMarker == 0 or _Debug.input:sub(_Debug.inputMarker + 1, _Debug.inputMarker + 1):find('[0-9a-zA-Z_]') then
+				 _Debug.ProposalLocation = _G
+				 _Debug.Proposal_String = ''
+			 else
+				 _Debug.findLocation(_Debug.input:sub(1, _Debug.inputMarker))
+			 end
+			 _Debug.updateProposals(_Debug.ProposalLocation)
 		end
+	else
+		for i=1,#a do
+			_Debug.resetProposals = true
+			_Debug.inputMarker = _Debug.inputMarker + 1
+			_Debug.tick = 0
+			_Debug.drawTick = false
+			_Debug.handlePast(a[i])
+		end
+		if not _Debug.trackKeys[a] then
+			_Debug.trackKeys[a] = { time = _Debug.keyRepeatInterval - _Debug.keyRepeatDelay}
+		end
+	end
+end
+_Debug.handlePast = function(add)
+	local suffix = _Debug.input:sub(_Debug.inputMarker, (#_Debug.input >= _Debug.inputMarker) and #_Debug.input or _Debug.inputMarker + 1)
+	if _Debug.inputMarker == 0 then --Keep the input from copying itself
+		suffix = ""
+	end
+	_Debug.input = _Debug.input:sub(0, _Debug.inputMarker - 1) .. add .. suffix
+	if _Debug.resetProposals then
+		if _Debug.inputMarker == 0 or _Debug.input:sub(_Debug.inputMarker + 1, _Debug.inputMarker + 1):find('[0-9a-zA-Z_]') then
+			_Debug.ProposalLocation = _G
+			_Debug.Proposal_String = ''
+		else
+			_Debug.findLocation(_Debug.input:sub(1, _Debug.inputMarker))
+		end
+		_Debug.updateProposals(_Debug.ProposalLocation)
+	end
 end
 
 --Reloading the Code, update() and load()
@@ -493,19 +534,19 @@ _G["love"].run = function()
 					end
 				end
 				local skipEvent = false
+				if e == "keypressed" then --Keypress
+					skipEvent = true
+					
+					if string.len(a)>=2 or (love.keyboard.isDown('lctrl') and (a == 'c' or a == 'v')) then _Debug.handleKey(a) end
+					if not _Debug.drawOverlay then
+						if love.keypressed then love.keypressed(a,b) end
+					end
+				end
 				if e == "textinput" then --Keypress
 					skipEvent = true
 					_Debug.handleKey(a)
 					if not _Debug.drawOverlay then
 						if love.textinput then love.textinput(a) end
-					end
-				end
-				if e == "keypressed" then --Keypress
-					skipEvent = true
-					
-					if string.len(a)>=2 then _Debug.handleKey(a, b) end
-					if not _Debug.drawOverlay then
-						if love.keypressed then love.keypressed(a,b) end
 					end
 				end
 				if e == "keyreleased" then --Keyrelease
@@ -534,14 +575,26 @@ _G["love"].run = function()
 		end
 		if _Debug.drawOverlay then
 			for key, d in pairs(_Debug.trackKeys) do
-				if love.keyboard.isDown(key) then
-					d.time = d.time + dt
-					if d.time >= _Debug.keyRepeatInterval then
-						d.time = 0
-						_Debug.handleVirtualKey(key, d.unicode)
+				if type(key) == 'string' then
+					if love.keyboard.isDown(key) then
+						d.time = d.time + dt
+						if d.time >= _Debug.keyRepeatInterval then
+							d.time = 0
+							_Debug.handleVirtualKey(key)
+						end
+					else
+						 _Debug.trackKeys[key] = nil
 					end
-				else
-					_Debug.trackKeys[key] = nil
+				 else
+					if love.keyboard.isDown('v') and love.keyboard.isDown('lctrl') then
+						d.time = d.time + dt
+						if d.time >= _Debug.keyRepeatInterval then
+							d.time = 0
+							_Debug.handleVirtualKey(key)
+						end
+					else
+						 _Debug.trackKeys[key] = nil
+					end
 				end
 			end
 		end
