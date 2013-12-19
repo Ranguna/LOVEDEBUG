@@ -1,5 +1,5 @@
 --local _Debug table for holding all variables
- _Debug = {
+local _Debug = {
 	errors = {},
 	prints = {},
 	order = {},
