@@ -29,6 +29,7 @@ end
 * Use the arrow keys while you are coding in the console to browse a list of possible autocompletions and press tab to autocomplete the word.
 * Use Shift+Arrow keys to browse input histoy.
 * Press F5 while you are at the console to reload your code or simply set _DebugSettings.LiveAuto to true to automaticly reload your code when it's changed
+* Copy and Past by pressing Ctrl+V/C
 
 
 **Full Functionality list:**
@@ -44,5 +45,6 @@ end
 * Use the home and the end keys to jump to the end or to beginning of the line.
 * Browse code history by using the arrow keys while pressing the Shift key.
 * LiveCoding, you can reload your code by pressing F5 while at the console or by setting _DebugSettings.LiveAuto to true.
-* Type clear and press enter to clear the console.
+* Type 'clear' and press enter to clear the console.
+* Type Ctrl+C/V to copy or to past text into the console input.
 * Add your own ;)
