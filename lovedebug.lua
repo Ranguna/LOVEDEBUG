@@ -407,6 +407,11 @@ _Debug.handleKey = function(a)
 			elseif a:lower()=='c' then
 				 love.system.setClipboardText(_Debug.input)
 				 return
+			else
+				_Debug.handleVirtualKey(a)
+				if not _Debug.trackKeys[a] then
+					_Debug.trackKeys[a] = { time = _Debug.keyRepeatInterval - _Debug.keyRepeatDelay}
+				end
 			end
 		else
 			_Debug.handleVirtualKey(a)
@@ -534,19 +539,19 @@ _G["love"].run = function()
 					end
 				end
 				local skipEvent = false
+				if e == "textinput" then --Keypress
+					skipEvent = true
+					_Debug.handleKey(a)
+					if not _Debug.drawOverlay then
+						if love.textinput then love.textinput(a) end
+					end
+				end
 				if e == "keypressed" then --Keypress
 					skipEvent = true
 					
 					if string.len(a)>=2 or (love.keyboard.isDown('lctrl') and (a == 'c' or a == 'v')) then _Debug.handleKey(a) end
 					if not _Debug.drawOverlay then
 						if love.keypressed then love.keypressed(a,b) end
-					end
-				end
-				if e == "textinput" then --Keypress
-					skipEvent = true
-					_Debug.handleKey(a)
-					if not _Debug.drawOverlay then
-						if love.textinput then love.textinput(a) end
 					end
 				end
 				if e == "keyreleased" then --Keyrelease
