@@ -55,6 +55,7 @@ _DebugSettings.Settings = function()
 	print("   _DebugSettings.OverlayColor  [{int, int, int}]  Sets the color of the overlay, default is {0,0,0}")
 	print("   _DebugSettings.LiveAuto  [Boolean]  Check if the code should be reloaded when it's modified, default is false")
 	print("   _DebugSettings.LiveFile  [String]  Sets the file that lovedebug reloads, default is 'main.lua'")
+	print("   _DebugSettings.LiveFile  [{String,String,...}]  Sets the files, has a table, that lovedebug reloads, can be multiple")
 	print("   _DebugSettings.LiveReset  [Boolean]  Rather or not love.run() should be reloaded if the code is HotSwapped, default is false")
 end
 
@@ -258,8 +259,8 @@ _Debug.keyConvert = function(key)
 		end
 	elseif key == 'f5' then
 		_Debug.liveDo=true
-	elseif key == "return" then --Execute Script
-		if _Debug.input == 'clear' then
+	elseif key == "return" then 
+		if _Debug.input == 'clear' then --Clears the console
 			_Debug.history[#_Debug.history] = _Debug.input
 			table.insert(_Debug.history, '')
 			_Debug.historyIndex = #_Debug.history
@@ -273,30 +274,62 @@ _Debug.keyConvert = function(key)
 			_Debug.lastRows = 1
 			_Debug.input = ""
 			_Debug.inputMarker = 0
-		else
-			print("> " .. _Debug.input)
-			_Debug.history[#_Debug.history] = _Debug.input
-			table.insert(_Debug.history, '')
-			_Debug.historyIndex = #_Debug.history
+			return
+		end
+		local liveflag,prevfile,prevmod
+		if string.find(_Debug.input,'_DebugSettings.LiveFile') then -- Saving previouse live data if changed.
+			prevfile = _DebugSettings.LiveFile
+			prevmod = _Debug.liveLastModified
+			liveflag=true
+		end
+		
+		--Execute Script
+		print("> " .. _Debug.input)
+		_Debug.history[#_Debug.history] = _Debug.input
+		table.insert(_Debug.history, '')
+		_Debug.historyIndex = #_Debug.history
 	 
-			local f, err = loadstring(_Debug.input)
-			if f then
-				f, err = pcall(f)
+		local f, err = loadstring(_Debug.input)
+		if f then
+			f, err = pcall(f)
+		end
+		if not f then
+			local sindex = 16 + #_Debug.input
+			if sindex > 63 then
+				sindex = 67
 			end
-			if not f then
-				local sindex = 16 + #_Debug.input
-				if sindex > 63 then
-					sindex = 67
+			_Debug.handleError(err:sub(sindex))
+		end
+		_Debug.input = ""
+		_Debug.inputMarker = 0
+		if _Debug.orderOffset < #_Debug.order - _Debug.lastRows + 1 then
+			_Debug.orderOffset = #_Debug.order - _Debug.lastRows + 1
+		end
+		_Debug.tick = 0
+		_Debug.drawTick = false
+		--
+		
+		if liveflag then -- Setting up lastModified for the new live file(s) if changed
+			if type(_DebugSettings.LiveFile) == 'table' then
+				_Debug.liveLastModified={}
+				for i = 1, #_DebugSettings.LiveFile do --Setting up lastModified for live files
+					if not love.filesystem.exists(_DebugSettings.LiveFile[i]) then --if the file's not found then the live variables are reset
+						_Debug.handleError('_DebugSettings.LiveFile: Index '..i..' file "'.._DebugSettings.LiveFile[i]..'" was not found.')
+						_DebugSettings.LiveFile = prevfile
+						_Debug.liveLastModified = prevmod
+						return
+					end
+					_Debug.liveLastModified[i] = love.filesystem.getLastModified(_DebugSettings.LiveFile[i])
 				end
-				_Debug.handleError(err:sub(sindex))
+			else
+				if love.filesystem.exists(_DebugSettings.LiveFile) then
+					_Debug.liveLastModified = love.filesystem.getLastModified(_DebugSettings.LiveFile)
+				else
+					_Debug.handleError('_DebugSettings.LiveFile: File "'.._DebugSettings.LiveFile..'" was not found.')
+					_DebugSettings.LiveFile = prevfile
+					_Debug.liveLastModified = prevmod
+				end
 			end
-			_Debug.input = ""
-			_Debug.inputMarker = 0
-			if _Debug.orderOffset < #_Debug.order - _Debug.lastRows + 1 then
-				_Debug.orderOffset = #_Debug.order - _Debug.lastRows + 1
-			end
-			_Debug.tick = 0
-			_Debug.drawTick = false
 		end
 	elseif key == "home" then
 		_Debug.inputMarker = 0
@@ -471,35 +504,54 @@ _Debug.handlePast = function(add)
 	end
 end
 
---Reloading the Code, update() and load()
-_Debug.hotSwapUpdate = function(dt)
+--Reloads the Code, update() and load()
+_Debug.hotSwapUpdate = function(dt,file)
 	--print('Starting HotSwap')
+	local file = file or _DebugSettings.LiveFile
 	local output, ok, err, loadok, updateok
-	success, chunk = pcall(love.filesystem.load, _DebugSettings.LiveFile)
+	success, chunk = pcall(love.filesystem.load, file)
 	if not success then
-        print(tostring(chunk))
+        _Debug.handleError(tostring(chunk))
 		output = chunk .. '\n'
     end
     ok,err = xpcall(chunk, _Debug.handleError)
 	
 	if ok then
-		print("'".._DebugSettings.LiveFile.."' Reloaded.")
+		print("'"..file.."' Reloaded.")
 	end
 	
-	if _DebugSettings.LiveReset then
-		loadok,err=xpcall(love.load,_Debug.handleError)
-		if loadok then
-			print("'love.run()' Reloaded.")
-		end
+	if file == 'main' then --so it only updates love.update() once
+		updateok,err=pcall(love.update,dt)
 	end
-	
-	updateok,err=pcall(love.update,dt)
 end
---Reloading the code, draw(), I don't think this is needed..
+--Reloads the code, love.load()
+_Debug.hotSwapLoad = function()
+	local loadok,err=xpcall(love.load,_Debug.handleError)
+	if loadok then
+		print("'love.run()' Reloaded.")
+	end
+end
+--Reloads the code, draw(), I don't think this is needed..
 _Debug.hotSwapDraw = function()
 	local drawok,err
 	drawok,err = xpcall(love.draw,_Debug.handleError)
 end
+_Debug.liveCheckLastModified = function(table1,table2)
+	if type(table1) == 'string' then
+		if love.filesystem.getLastModified(table1) ~= table2 then
+			return true
+		end
+		return false
+	end
+	
+	for i,v in ipairs(table1) do
+		if love.filesystem.getLastModified(v) ~= table2[i] then
+			return true
+		end
+	end
+	return false
+end
+	
 	
 
 --Modded version of original love.run
@@ -605,15 +657,45 @@ _G["love"].run = function()
 		end
 		
 		if love.update and not _Debug.drawOverlay then
-			if _DebugSettings.LiveAuto and _Debug.liveLastModified < love.filesystem.getLastModified(_DebugSettings.LiveFile) then
-				_Debug.liveLastModified = _DebugSettings.LiveAuto and love.filesystem.getLastModified(_DebugSettings.LiveFile) or 0
-				_Debug.hotSwapUpdate(dt) 
+			if _DebugSettings.LiveAuto and _Debug.liveCheckLastModified(_DebugSettings.LiveFile,_Debug.liveLastModified) then
+				if type(_DebugSettings.LiveFile) == 'table' then
+					for i=1,#_DebugSettings.LiveFile do
+						if love.filesystem.getLastModified(_DebugSettings.LiveFile[i]) ~= _Debug.liveLastModified[i] then
+							_Debug.hotSwapUpdate(dt,_DebugSettings.LiveFile[i])
+							_Debug.liveLastModified[i] = love.filesystem.getLastModified(_DebugSettings.LiveFile[i])
+						end
+					end
+					if _DebugSettings.LiveReset then
+						_Debug.hotSwapLoad()
+					end
+				else
+					_Debug.hotSwapUpdate(dt,_DebugSettings.LiveFile)
+					_Debug.liveLastModified = love.filesystem.getLastModified(_DebugSettings.LiveFile)
+					if _DebugSettings.LiveReset then
+						_Debug.hotSwapLoad()
+					end
+				end
 			else
 				xpcall(function() love.update(dt) end, _Debug.handleError)
 			end
-		elseif love.update and (_Debug.liveDo or (_DebugSettings.LiveAuto and _Debug.liveLastModified < love.filesystem.getLastModified(_DebugSettings.LiveFile))) then 
-			_Debug.liveLastModified = love.filesystem.getLastModified(_DebugSettings.LiveFile)
-			_Debug.hotSwapUpdate(dt) 
+		elseif love.update and (_Debug.liveDo or (_DebugSettings.LiveAuto and _Debug.liveCheckLastModified(_DebugSettings.LiveFile,_Debug.liveLastModified))) then
+			if type(_DebugSettings.LiveFile) == 'table' then
+				for i=1,#_DebugSettings.LiveFile do
+					if (_DebugSettings.LiveAuto and love.filesystem.getLastModified(_DebugSettings.LiveFile[i]) ~= _Debug.liveLastModified[i]) or _Debug.liveDo then
+						_Debug.hotSwapUpdate(dt,_DebugSettings.LiveFile[i])
+						_Debug.liveLastModified[i] = love.filesystem.getLastModified(_DebugSettings.LiveFile[i])
+					end
+				end
+				if _DebugSettings.LiveReset then
+					_Debug.hotSwapLoad()
+				end
+			else
+				_Debug.hotSwapUpdate(dt,_DebugSettings.LiveFile)
+				if _DebugSettings.LiveReset then
+					_Debug.hotSwapLoad()
+				end
+				_Debug.liveLastModified = love.filesystem.getLastModified(_DebugSettings.LiveFile)
+			end
 		end -- will pass 0 if love.timer is disabled
 		if love.window and love.graphics and love.window.isCreated() then
 			love.graphics.clear()
