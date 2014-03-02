@@ -291,6 +291,7 @@ _Debug.keyConvert = function(key)
 	 
 		local f, err = loadstring(_Debug.input)
 		if f then
+			--f = xpcall(f,_Debug.handleError)
 			f, err = pcall(f)
 		end
 		if not f then
@@ -298,7 +299,7 @@ _Debug.keyConvert = function(key)
 			if sindex > 63 then
 				sindex = 67
 			end
-			_Debug.handleError(err:sub(sindex))
+			_Debug.handleError(err)
 		end
 		_Debug.input = ""
 		_Debug.inputMarker = 0
@@ -425,7 +426,7 @@ end
 
 --Handle Keypresses
 _Debug.handleKey = function(a)
-	local activekey = _lovedebugpresskey or "f8"
+	local activekey = love.system.getOS()~='Linux' and (_lovedebugpresskey or "f8") or 'menu'
 	if a == activekey then
 		if love.keyboard.isDown("lshift", "rshift", "lctrl", "rctrl") then --Support for both Shift and CTRL
 			_Debug.drawOverlay = not _Debug.drawOverlay --Toggle
@@ -506,7 +507,6 @@ end
 
 --Reloads the Code, update() and load()
 _Debug.hotSwapUpdate = function(dt,file)
-	--print('Starting HotSwap')
 	local file = file or _DebugSettings.LiveFile
 	local output, ok, err, loadok, updateok
 	success, chunk = pcall(love.filesystem.load, file)
@@ -518,6 +518,11 @@ _Debug.hotSwapUpdate = function(dt,file)
 	
 	if ok then
 		print("'"..file.."' Reloaded.")
+	else
+		print('Something went wrong while trying to update file: '..file)
+	end
+	if _Debug.orderOffset < #_Debug.order - _Debug.lastRows + 1 then
+		_Debug.orderOffset = #_Debug.order - _Debug.lastRows + 1
 	end
 	
 	if file == 'main' then --so it only updates love.update() once
@@ -528,7 +533,10 @@ end
 _Debug.hotSwapLoad = function()
 	local loadok,err=xpcall(love.load,_Debug.handleError)
 	if loadok then
-		print("'love.run()' Reloaded.")
+		print("'love.load()' Reloaded.")
+	end
+	if _Debug.orderOffset < #_Debug.order - _Debug.lastRows + 1 then
+		_Debug.orderOffset = #_Debug.order - _Debug.lastRows + 1
 	end
 end
 --Reloads the code, draw(), I don't think this is needed..
@@ -701,7 +709,7 @@ _G["love"].run = function()
 			love.graphics.clear()
 			love.graphics.origin()
 			if love.draw then if _Debug.liveDo then _Debug.hotSwapDraw() _Debug.liveDo=false else xpcall(love.draw, _Debug.handleError) end end
-			if _Debug.drawOverlay then _Debug.overlay() end
+			if _Debug.drawOverlay then love.graphics.scale(1) love.graphics.translate(0, 0) xpcall(love.draw, _Debug.handleError) _Debug.overlay() end
 			love.graphics.present()
 		end
 
