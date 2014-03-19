@@ -13,7 +13,7 @@ LoveDebug is a community-driven open-development project, the creator has stoppe
 * Add `require('lovedebug')` to the beginning of you code in `main.lua` Ex:
 
 ```lua
-require("debug.lua")
+require("lovedebug")
 
 function love.load()
 end
