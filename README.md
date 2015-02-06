@@ -18,7 +18,7 @@ require("lovedebug")
 function love.load()
 end
 ```
-* Lunch your game and press Ctrl/Shit + F8
+* Lunch your game and press Ctrl/Shift + F8
 * And there you have it, your own onscreen interactive console.
 
 ## Functionalities:
