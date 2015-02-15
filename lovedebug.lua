@@ -662,6 +662,7 @@ _G["love"].run = function()
 					end
 				end
 			end
+            xpcall(function() love.update(dt) end, _Debug.handleError)
 		end
 		
 		if love.update and not _Debug.drawOverlay then
