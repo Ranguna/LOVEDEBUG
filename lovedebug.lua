@@ -39,11 +39,12 @@ local _Debug = {
 --Settings
 _DebugSettings = {
 	MultipleErrors = false,
-	OverlayColor = {0, 0, 0},
-	
+	OverlayColor = {0, 0, 0},	
 	LiveAuto = false,
 	LiveFile = 'main.lua',
-	LiveReset = false
+	LiveReset = false,
+    HaltExecution = true,
+    AutoScroll = false,
 }
 
 
@@ -56,7 +57,8 @@ _DebugSettings.Settings = function()
 	print("   _DebugSettings.LiveAuto  [Boolean]  Check if the code should be reloaded when it's modified, default is false")
 	print("   _DebugSettings.LiveFile  [String]  Sets the file that lovedebug reloads, default is 'main.lua'")
 	print("   _DebugSettings.LiveFile  [{String,String,...}]  Sets the files, has a table, that lovedebug reloads, can be multiple")
-	print("   _DebugSettings.LiveReset  [Boolean]  Rather or not love.run() should be reloaded if the code is HotSwapped, default is false")
+	print("   _DebugSettings.HaltExecution  [Boolean]  Rather or not to halt program execution while console is open, default is true")
+    print("   _DebugSettings.AutoScroll  [Boolean]  Rather or not to auto scroll the console once output fills up the console, default is false")
 end
 
 
@@ -662,6 +664,18 @@ _G["love"].run = function()
 					end
 				end
 			end
+            
+            -- Call love.update() if we are not to halt program execution
+            if _DebugSettings.HaltExecution == false then
+                xpcall(function() love.update(dt) end, _Debug.handleError)
+            end
+            
+            -- Auto scroll the console if AutoScroll == true
+            if _DebugSettings.AutoScroll == true then
+                if _Debug.orderOffset < #_Debug.order - _Debug.lastRows + 1 then
+                    _Debug.orderOffset = #_Debug.order - _Debug.lastRows + 1
+                end
+            end
 		end
 		
 		if love.update and not _Debug.drawOverlay then
@@ -720,4 +734,3 @@ _G["love"].run = function()
 	end
 
 end
-
