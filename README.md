@@ -26,9 +26,10 @@ end
 **Key features:**
 * Pess CTRL/Shift + F8 to Show/Hide the console.
 * Type `_DebugSettings.Settings()` to see a list of available variables that you can change.
-* Use the arrow keys while you are coding in the console to browse a list of possible autocompletions and press tab to autocomplete the word.
+* Hotswap your code. Press F5 while you are at the console to reload your code or simply set _DebugSettings.LiveAuto to true to automaticly reload your code when it has been changed, controle the files that should be monitored by editing _DebugSettings.LiveFile
+* HUD feed of everything that is going on under the under the hood of you application in real time.
+* Code autocompletion. Use the arrow keys while you are coding in the console to browse a list of possible autocompletions and press tab to autocomplete the word.
 * Use Shift+Arrow keys to browse input histoy.
-* Press F5 while you are at the console to reload your code or simply set _DebugSettings.LiveAuto to true to automaticly reload your code when it's changed, controle the files that should be monitored by editing _DebugSettings.LiveFile
 * Copy and Past by pressing Ctrl+V/C
 
 
@@ -47,4 +48,5 @@ end
 * LiveCoding, you can reload your code by pressing F5 while at the console or by setting _DebugSettings.LiveAuto to true and you can reload more than one file, see _DebugSettings.Settings().
 * Type 'clear' and press enter to clear the console.
 * Type Ctrl+C/V to copy or to past text into the console input.
+* HUD with the latest prints and errors that your application emitted.
 * Add your own ;)
