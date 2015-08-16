@@ -113,6 +113,7 @@ end
 _Debug.onTop = function()
 	love.graphics.push()
 	love.graphics.origin()
+	love.graphics.setFont(_Debug.Font)
 	local font = love.graphics.getFont()
 	local r, g, b, a = love.graphics.getColor()
 
