@@ -46,7 +46,9 @@ _DebugSettings = {
 	
 	LiveAuto = false,
 	LiveFile = 'main.lua',
-	LiveReset = false
+	LiveReset = false,
+    HaltExecution = true,
+    AutoScroll = false,
 }
 
 
@@ -61,6 +63,8 @@ _DebugSettings.Settings = function()
 	print("   _DebugSettings.LiveFile  [{String,String,...}]  Sets the files, has a table, that lovedebug reloads, can be multiple")
 	print("   _DebugSettings.LiveReset  [Boolean]  Rather or not love.load() should be reloaded if the code is HotSwapped, default is false")
 	print("   _DebugSettings.DrawOnTop  [Boolean]  If the errors and prints should be dispalyed on top of the screen, default is false")
+	print("   _DebugSettings.HaltExecution  [Boolean]  Rather or not to halt program execution while console is open, default is true")
+	print("   _DebugSettings.AutoScroll  [Boolean]  Rather or not to auto scroll the console once output fills up the console, default is false")
 end
 
 
@@ -742,6 +746,18 @@ _G["love"].run = function()
 					end
 				end
 			end
+            
+            -- Call love.update() if we are not to halt program execution
+            if _DebugSettings.HaltExecution == false then
+                xpcall(function() love.update(dt) end, _Debug.handleError)
+            end
+            
+            -- Auto scroll the console if AutoScroll == true
+            if _DebugSettings.AutoScroll == true then
+                if _Debug.orderOffset < #_Debug.order - _Debug.lastRows + 1 then
+                    _Debug.orderOffset = #_Debug.order - _Debug.lastRows + 1
+                end
+            end
 		end
 		
 		if love.update and not _Debug.drawOverlay then
