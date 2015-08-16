@@ -134,10 +134,6 @@ _Debug.onTop = function()
 		love.graphics.setColor(255, 0, 0, 255)
 		love.graphics.rectangle('fill', love.graphics.getWidth()/2, 0, love.graphics.getWidth()/2, 2)
 	end
-	if #w > 0 then
-		love.graphics.setColor(255, 91, 13, 255)
-		love.graphics.rectangle('fill', love.graphics.getWidth()/2, 0, love.graphics.getWidth()/2, 2)
-	end
 
 	if p then
 		--draw prints
