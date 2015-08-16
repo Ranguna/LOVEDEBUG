@@ -2,7 +2,8 @@
 local _Debug = {
 	errors = {},
 	prints = {},
-	order = {},
+	order = {}, --e for errors, p for prints
+	onTopFeed = {},
 	orderOffset = 0,
 	longestOffset = 0,
 
@@ -10,6 +11,8 @@ local _Debug = {
 	tickTime = 0.5,
 	tick = 0.5,
 	drawTick = true,
+
+	drawOnTop = true,
 
 	input = "",
 	inputMarker = 0,
@@ -39,12 +42,11 @@ local _Debug = {
 --Settings
 _DebugSettings = {
 	MultipleErrors = false,
-	OverlayColor = {0, 0, 0},	
+	OverlayColor = {0, 0, 0},
+	
 	LiveAuto = false,
 	LiveFile = 'main.lua',
-	LiveReset = false,
-    HaltExecution = true,
-    AutoScroll = false,
+	LiveReset = false
 }
 
 
@@ -57,8 +59,7 @@ _DebugSettings.Settings = function()
 	print("   _DebugSettings.LiveAuto  [Boolean]  Check if the code should be reloaded when it's modified, default is false")
 	print("   _DebugSettings.LiveFile  [String]  Sets the file that lovedebug reloads, default is 'main.lua'")
 	print("   _DebugSettings.LiveFile  [{String,String,...}]  Sets the files, has a table, that lovedebug reloads, can be multiple")
-	print("   _DebugSettings.HaltExecution  [Boolean]  Rather or not to halt program execution while console is open, default is true")
-    print("   _DebugSettings.AutoScroll  [Boolean]  Rather or not to auto scroll the console once output fills up the console, default is false")
+	print("   _DebugSettings.LiveReset  [Boolean]  Rather or not love.load() should be reloaded if the code is HotSwapped, default is false")
 end
 
 
@@ -75,6 +76,7 @@ _G["print"] = function(...)
 	end
 	table.insert(_Debug.prints, table.concat(str, "       "))
 	table.insert(_Debug.order, "p" .. tostring(#_Debug.prints))
+	table.insert(_Debug.onTopFeed, {"p" .. tostring(#_Debug.prints),0})
 end
 
 
@@ -89,6 +91,7 @@ _Debug.handleError = function(err)
 	end
 	table.insert(_Debug.errors, err)
 	table.insert(_Debug.order, "e" .. tostring(#_Debug.errors))
+	table.insert(_Debug.onTopFeed, {"e" .. tostring(#_Debug.errors),0})
 end
 
 
@@ -101,8 +104,80 @@ _Debug.lineInfo = function(str)
 end
 
 
+--On Top drawer
+_Debug.onTop = function()
+	love.graphics.push()
+	love.graphics.origin()
+	local font = love.graphics.getFont()
+	local r, g, b, a = love.graphics.getColor()
+
+	local p,e = {},{}
+	for i,v in ipairs(_Debug.onTopFeed) do
+		err, index = _Debug.lineInfo(v[1]) --Obtain message and type
+		msg = err and _Debug.errors[index] or _Debug.prints[index]
+		if err then
+			table.insert(e,{msg,i})
+		else
+			table.insert(p,{msg,i})
+		end
+	end
+	if #p > 0 then
+		love.graphics.setColor(127, 127, 127, 255)
+		love.graphics.rectangle('fill', 0, 0, love.graphics.getWidth()/2, 2)
+	end
+	if #e > 0 then 
+		love.graphics.setColor(255, 0, 0, 255)
+		love.graphics.rectangle('fill', love.graphics.getWidth()/2, 0, love.graphics.getWidth()/2, 2)
+	end
+	if #w > 0 then
+		love.graphics.setColor(255, 91, 13, 255)
+		love.graphics.rectangle('fill', love.graphics.getWidth()/2, 0, love.graphics.getWidth()/2, 2)
+	end
+
+	if p then
+		--draw prints
+		love.graphics.setScissor(0,0,love.graphics.getWidth()/2,2+ 5*((#p-1) > -1 and #p-1 or 0) + #p*_Debug.Font:getHeight())
+		love.graphics.setColor(127, 127, 127, 64)
+		love.graphics.rectangle('fill',0,1,love.graphics.getWidth()/2,2+ 5*((#p-1) > -1 and #p-1 or 0) + #p*_Debug.Font:getHeight())
+		love.graphics.setColor(255, 255, 255, 255)
+		for i,v in ipairs(p) do
+			love.graphics.print(v[1], 5, 2+ 5*(i-1) + (i-1)*_Debug.Font:getHeight())
+		end
+	end
+	if e then
+		--draw errors
+		love.graphics.setScissor(love.graphics.getWidth()/2,0,love.graphics.getWidth()/2,2+ 5*((#e-1) > -1 and #e-1 or 0) + #e*_Debug.Font:getHeight())
+		love.graphics.setColor(255, 0, 0, 64)
+		love.graphics.rectangle('fill',love.graphics.getWidth()/2,1,love.graphics.getWidth()/2,2+ 5*((#e-1) > -1 and #e-1 or 0) + #e*_Debug.Font:getHeight())
+		love.graphics.setColor(255, 255, 255, 255)
+		for i,v in ipairs(e) do
+			love.graphics.print(v[1], love.graphics.getWidth()/2+5, 2+ 5*(i-1) + (i-1)*_Debug.Font:getHeight())
+		end
+	end
+	love.graphics.setScissor()
+	love.graphics.setColor(r, g, b, a)
+	if font then love.graphics.setFont(font) end
+	love.graphics.pop()
+end
+_Debug.onTopUpdate = function(dt)
+	local rmv = {}
+	for i,v in ipairs(_Debug.onTopFeed) do
+		if v[2] >= 6 then
+			table.insert(rmv,i)
+		else
+			_Debug.onTopFeed[1][2] = _Debug.onTopFeed[1][2] +dt
+		end
+	end
+	for i,v in ipairs(rmv) do
+		table.remove(_Debug.onTopFeed,v)
+	end
+end
+
+
 --Overlay drawer
 _Debug.overlay = function()
+	love.graphics.push()
+	love.graphics.origin()
 	local font = love.graphics.getFont()
 	local r, g, b, a = love.graphics.getColor()
 
@@ -181,6 +256,7 @@ _Debug.overlay = function()
 	if font then love.graphics.setFont(font) end
 	_Debug.lastCut = cutY
 	_Debug.lastH = h
+	love.graphics.pop()
 end
 
 --Handle Mousepresses
@@ -634,6 +710,7 @@ _G["love"].run = function()
 		if love.timer then
 			love.timer.step()
 			dt = love.timer.getDelta()
+			_Debug.onTopUpdate(dt)
 		end
 		_Debug.tick = _Debug.tick - dt
 		if _Debug.tick <= 0 then
@@ -664,18 +741,6 @@ _G["love"].run = function()
 					end
 				end
 			end
-            
-            -- Call love.update() if we are not to halt program execution
-            if _DebugSettings.HaltExecution == false then
-                xpcall(function() love.update(dt) end, _Debug.handleError)
-            end
-            
-            -- Auto scroll the console if AutoScroll == true
-            if _DebugSettings.AutoScroll == true then
-                if _Debug.orderOffset < #_Debug.order - _Debug.lastRows + 1 then
-                    _Debug.orderOffset = #_Debug.order - _Debug.lastRows + 1
-                end
-            end
 		end
 		
 		if love.update and not _Debug.drawOverlay then
@@ -722,8 +787,9 @@ _G["love"].run = function()
 		if love.window and love.graphics and love.window.isCreated() then
 			love.graphics.clear()
 			love.graphics.origin()
-			if love.draw then if _Debug.liveDo then _Debug.hotSwapDraw() _Debug.liveDo=false else xpcall(love.draw, _Debug.handleError) end end
-			if _Debug.drawOverlay then love.graphics.scale(1) love.graphics.translate(0, 0) xpcall(love.draw, _Debug.handleError) _Debug.overlay() end
+			if love.draw then if _Debug.liveDo then _Debug.hotSwapDraw() _Debug.liveDo=false end xpcall(love.draw, _Debug.handleError) end
+			if _Debug.drawOnTop then _Debug.onTop() end
+			if _Debug.drawOverlay then _Debug.overlay() end
 			love.graphics.present()
 		end
 
@@ -734,3 +800,4 @@ _G["love"].run = function()
 	end
 
 end
+
