@@ -1,3 +1,5 @@
+This version of lovedebug only works from LÖVE 0.8.0 to 0.9.2
+
 LoveDebug
 =========
 LoveDebug - A whole new way of debugging your game, original created by [kalle2990](http://love2d.org/forums/memberlist.php?mode=viewprofile&u=690)
