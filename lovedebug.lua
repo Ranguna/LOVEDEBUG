@@ -180,6 +180,7 @@ end
 _Debug.overlay = function()
 	love.graphics.push()
 	love.graphics.origin()
+	love.graphics.setStencil()
 	local font = love.graphics.getFont()
 	local r, g, b, a = love.graphics.getColor()
 
