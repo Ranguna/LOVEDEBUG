@@ -111,13 +111,13 @@ end
 
 --On Top drawer
 _Debug.onTop = function()
+	local font = love.graphics.getFont()
+	local r, g, b, a = love.graphics.getColor()
 	love.graphics.push()
 	love.graphics.origin()
 	love.graphics.setFont(_Debug.Font)
-	local font = love.graphics.getFont()
-	local r, g, b, a = love.graphics.getColor()
 
-	local p,e = {},{}
+	local p,e,err,index,msg = {},{}
 	for i,v in ipairs(_Debug.onTopFeed) do
 		err, index = _Debug.lineInfo(v[1]) --Obtain message and type
 		msg = err and _Debug.errors[index] or _Debug.prints[index]
@@ -178,11 +178,11 @@ end
 
 --Overlay drawer
 _Debug.overlay = function()
+	local font = love.graphics.getFont()
+	local r, g, b, a = love.graphics.getColor()
 	love.graphics.push()
 	love.graphics.origin()
 	love.graphics.setStencilTest()
-	local font = love.graphics.getFont()
-	local r, g, b, a = love.graphics.getColor()
 
 	local fontSize = _Debug.Font:getHeight()
 	local w = love.graphics.getWidth()
@@ -666,28 +666,25 @@ _G["love"].run = function()
 		-- Process events.
 		if love.event then
 			love.event.pump()
-			for e,a,b,c,d in love.event.poll() do
-				if e == "quit" then
+			for name, a,b,c,d,e,f in love.event.poll() do
+				if name == "quit" then
 					local quit = false
-					if love.quit then
-						xpcall(function() quit = love.quit() end, _Debug.handleError)
-					end
-					if not quit then
-						if love.audio then
-							love.audio.stop()
-						end
-						return
+					--if love.quit then
+					--	xpcall(function() quit = love.quit() end, _Debug.handleError)
+					--end
+					if not love.quit or not love.quit() then
+						return a
 					end
 				end
 				local skipEvent = false
-				if e == "textinput" then --Keypress
+				if name == "textinput" then --Keypress
 					skipEvent = true
 					_Debug.handleKey(a)
 					if not _Debug.drawOverlay then
 						if love.textinput then love.textinput(a) end
 					end
 				end
-				if e == "keypressed" then --Keypress
+				if name == "keypressed" then --Keypress
 					skipEvent = true
 					
 					if string.len(a)>=2 or (love.keyboard.isDown('lctrl') and (a == 'c' or a == 'v')) then _Debug.handleKey(a) end
@@ -695,18 +692,18 @@ _G["love"].run = function()
 						if love.keypressed then love.keypressed(a,b) end
 					end
 				end
-				if e == "keyreleased" then --Keyrelease
+				if name == "keyreleased" then --Keyrelease
 					skipEvent = true
 					if not _Debug.drawOverlay then
 						if love.keyreleased then love.keyreleased(a, b) end
 					end
 				end
-				if e == "mousepressed" and _Debug.drawOverlay then --Mousepress
+				if name == "mousepressed" and _Debug.drawOverlay then --Mousepress
 					skipEvent = true
 					_Debug.handleMouse(a, b, c)
 				end
 				if not skipEvent then
-					xpcall(function() love.handlers[e](a,b,c,d) end, _Debug.handleError)
+					xpcall(function() love.handlers[name](a,b,c,d,e,f) end, _Debug.handleError)
 				end
 			end
 		end
@@ -799,12 +796,12 @@ _G["love"].run = function()
 				_Debug.liveLastModified = love.filesystem.getLastModified(_DebugSettings.LiveFile)
 			end
 		end -- will pass 0 if love.timer is disabled
-		if love.window and love.graphics and love.window.isCreated() then
-			love.graphics.clear()
+		if love.graphics and love.graphics.isActive() then
+			love.graphics.clear(love.graphics.getBackgroundColor())
 			love.graphics.origin()
 			if love.draw then if _Debug.liveDo then _Debug.hotSwapDraw() _Debug.liveDo=false end xpcall(love.draw, _Debug.handleError) end
-			if _DebugSettings.DrawOnTop then _Debug.onTop() end
-			if _Debug.drawOverlay then _Debug.overlay() end
+			--if _DebugSettings.DrawOnTop then _Debug.onTop() end
+			--if _Debug.drawOverlay then _Debug.overlay() end
 			love.graphics.present()
 		end
 
