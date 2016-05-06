@@ -800,8 +800,8 @@ _G["love"].run = function()
 			love.graphics.clear(love.graphics.getBackgroundColor())
 			love.graphics.origin()
 			if love.draw then if _Debug.liveDo then _Debug.hotSwapDraw() _Debug.liveDo=false end xpcall(love.draw, _Debug.handleError) end
-			--if _DebugSettings.DrawOnTop then _Debug.onTop() end
-			--if _Debug.drawOverlay then _Debug.overlay() end
+			if _DebugSettings.DrawOnTop then _Debug.onTop() end
+			if _Debug.drawOverlay then _Debug.overlay() end
 			love.graphics.present()
 		end
 
