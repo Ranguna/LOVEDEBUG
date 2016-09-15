@@ -590,7 +590,7 @@ end
 _Debug.hotSwapUpdate = function(dt,file)
 	local file = file or _DebugSettings.LiveFile
 	local output, ok, err, loadok, updateok
-	success, chunk = pcall(love.filesystem.load, file)
+	local success, chunk = pcall(love.filesystem.load, file)
 	if not success then
         _Debug.handleError(tostring(chunk))
 		output = chunk .. '\n'
