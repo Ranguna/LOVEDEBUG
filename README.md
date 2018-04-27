@@ -1,3 +1,8 @@
+## Repo Size fix
+I've made a mistake of included a huge gif in this repo thus making this very slow to download.
+Thankfully @flamendless cloned and fixed this issue, you can find his repo [here](https://github.com/flamendless/lovedebug).
+
+
 LoveDebug
 =========
 LoveDebug - A whole new way of debugging your game, original created by [kalle2990](http://love2d.org/forums/memberlist.php?mode=viewprofile&u=690)
