@@ -1,6 +1,6 @@
 ## Repo Size fix
 I've made a mistake of included a huge gif in this repo thus making this very slow to download.
-Thankfully @flamendless cloned and fixed this issue, you can find his repo [here](https://github.com/flamendless/lovedebug).
+Thankfully @flamendless cloned and fixed this issue, and have updated this to work with löve 11.0 and 11.1. You can find his repo [here](https://github.com/flamendless/lovedebug).
 
 
 LoveDebug
