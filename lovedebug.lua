@@ -33,7 +33,7 @@ local _Debug = {
 	keyRepeatDelay = 0.4,
 	
 	liveOutput='',
-	liveLastModified=love.filesystem.getLastModified('main.lua'),
+	liveLastModified=love.filesystem.getInfo('main.lua').modtime,
 	liveDo=false
 }
 
@@ -401,11 +401,11 @@ _Debug.keyConvert = function(key)
 						_Debug.liveLastModified = prevmod
 						return
 					end
-					_Debug.liveLastModified[i] = love.filesystem.getLastModified(_DebugSettings.LiveFile[i])
+					_Debug.liveLastModified[i] = love.filesystem.getInfo(_DebugSettings.LiveFile[i]).modtime
 				end
 			else
 				if love.filesystem.exists(_DebugSettings.LiveFile) then
-					_Debug.liveLastModified = love.filesystem.getLastModified(_DebugSettings.LiveFile)
+					_Debug.liveLastModified = love.filesystem.getInfo(_DebugSettings.LiveFile).modtime
 				else
 					_Debug.handleError('_DebugSettings.LiveFile: File "'.._DebugSettings.LiveFile..'" was not found.')
 					_DebugSettings.LiveFile = prevfile
@@ -627,14 +627,14 @@ _Debug.hotSwapDraw = function()
 end
 _Debug.liveCheckLastModified = function(table1,table2)
 	if type(table1) == 'string' then
-		if love.filesystem.getLastModified(table1) ~= table2 then
+		if love.filesystem.getInfo(table1).modtime ~= table2 then
 			return true
 		end
 		return false
 	end
 	
 	for i,v in ipairs(table1) do
-		if love.filesystem.getLastModified(v) ~= table2[i] then
+		if love.filesystem.getInfo(v).modtime ~= table2[i] then
 			return true
 		end
 	end
@@ -759,9 +759,9 @@ _G["love"].run = function()
 			if _DebugSettings.LiveAuto and _Debug.liveCheckLastModified(_DebugSettings.LiveFile,_Debug.liveLastModified) then
 				if type(_DebugSettings.LiveFile) == 'table' then
 					for i=1,#_DebugSettings.LiveFile do
-						if love.filesystem.getLastModified(_DebugSettings.LiveFile[i]) ~= _Debug.liveLastModified[i] then
+						if love.filesystem.getInfo(_DebugSettings.LiveFile[i]).modtime ~= _Debug.liveLastModified[i] then
 							_Debug.hotSwapUpdate(dt,_DebugSettings.LiveFile[i])
-							_Debug.liveLastModified[i] = love.filesystem.getLastModified(_DebugSettings.LiveFile[i])
+							_Debug.liveLastModified[i] = love.filesystem.getInfo(_DebugSettings.LiveFile[i]).modtime
 						end
 					end
 					if _DebugSettings.LiveReset then
@@ -769,7 +769,7 @@ _G["love"].run = function()
 					end
 				else
 					_Debug.hotSwapUpdate(dt,_DebugSettings.LiveFile)
-					_Debug.liveLastModified = love.filesystem.getLastModified(_DebugSettings.LiveFile)
+					_Debug.liveLastModified = love.filesystem.getInfo(_DebugSettings.LiveFile).modtime
 					if _DebugSettings.LiveReset then
 						_Debug.hotSwapLoad()
 					end
@@ -780,9 +780,9 @@ _G["love"].run = function()
 		elseif love.update and (_Debug.liveDo or (_DebugSettings.LiveAuto and _Debug.liveCheckLastModified(_DebugSettings.LiveFile,_Debug.liveLastModified))) then
 			if type(_DebugSettings.LiveFile) == 'table' then
 				for i=1,#_DebugSettings.LiveFile do
-					if (_DebugSettings.LiveAuto and love.filesystem.getLastModified(_DebugSettings.LiveFile[i]) ~= _Debug.liveLastModified[i]) or _Debug.liveDo then
+					if (_DebugSettings.LiveAuto and love.filesystem.getInfo(_DebugSettings.LiveFile[i]).modtime ~= _Debug.liveLastModified[i]) or _Debug.liveDo then
 						_Debug.hotSwapUpdate(dt,_DebugSettings.LiveFile[i])
-						_Debug.liveLastModified[i] = love.filesystem.getLastModified(_DebugSettings.LiveFile[i])
+						_Debug.liveLastModified[i] = love.filesystem.getInfo(_DebugSettings.LiveFile[i]).modtime
 					end
 				end
 				if _DebugSettings.LiveReset then
@@ -793,7 +793,7 @@ _G["love"].run = function()
 				if _DebugSettings.LiveReset then
 					_Debug.hotSwapLoad()
 				end
-				_Debug.liveLastModified = love.filesystem.getLastModified(_DebugSettings.LiveFile)
+				_Debug.liveLastModified = love.filesystem.getInfo(_DebugSettings.LiveFile).modtime
 			end
 		end -- will pass 0 if love.timer is disabled
 		if love.graphics and love.graphics.isActive() then
